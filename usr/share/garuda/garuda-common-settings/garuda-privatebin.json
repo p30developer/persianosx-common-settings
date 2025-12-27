@@ -1,0 +1,11 @@
+{
+    "bin": [
+        {
+            "name": "",
+            "host": "https://bin.garudalinux.org",
+            "extra-header-fields": {
+                "x-garuda": "garuda-common-settings-1"
+            }
+        }
+    ]
+}

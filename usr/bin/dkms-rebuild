@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+# This script performs a full DKMS reset
+
+set -euo pipefail
+
+if ! [[ -x "$(command -v dkms)" ]]; then
+  echo -e "\033[1;31mError: dkms command not found.\033[0m"
+  exit 1
+fi
+
+# Parse /usr/src and find all DKMS modules
+
+DKMS_MODULES=()
+
+for dkmsfile in /usr/src/*/dkms.conf; do
+  if [[ -f "$dkmsfile" ]]; then
+    # Parse PACKAGE_NAME and PACKAGE_VERSION from dkms.conf
+    module="$(awk '{ match($0, /(\w+)="?([^"]+)"?/, arr); if (arr[1] == "PACKAGE_NAME") name=arr[2]; if (arr[1] == "PACKAGE_VERSION") version=arr[2]; if (name && version) { print name "/" version; exit } }' "$dkmsfile")"
+    if [[ -n "$module" ]]; then
+      DKMS_MODULES+=("$module")
+    else
+      echo -e "\033[1;31mFailed to parse dkms.conf: $dkmsfile\033[0m"
+    fi
+  fi
+done
+
+# Find all installed kernels
+
+KERNELS=()
+
+PACMAN_KERNEL_OUTPUT="$(LANG=C LANGUAGE=C LC_ALL=C pacman -Qo /usr/lib/modules/*/pkgbase 2>/dev/null || true)"
+
+if [[ -n "$PACMAN_KERNEL_OUTPUT" ]]; then
+  while read -r line; do
+    if [[ "$line" =~ ^/usr/lib/modules/([^/]+)/pkgbase ]]; then
+      KERNELS+=("${BASH_REMATCH[1]}")
+    fi
+  done <<< "$PACMAN_KERNEL_OUTPUT"
+else
+  echo -e "\033[1;31mFailed to detect installed kernels.\0033[0m"
+  exit 1
+fi
+
+echo -e "\033[1;34mDetected DKMS modules: ${DKMS_MODULES[*]}\033[0m"
+echo -e "\033[1;34mDetected kernels: ${KERNELS[*]}\033[0m"
+
+echo -e "\n\033[1;34mRemoving all DKMS modules for all kernels...\033[0m"
+
+# Remove DKMS modules for each kernel
+for module in "${DKMS_MODULES[@]}"; do
+    for kernel in "${KERNELS[@]}"; do
+        dkms remove "$module" -k "$kernel" || {
+            echo -e "\033[1;31mFailed to remove module $module for kernel $kernel\033[0m"
+        }
+    done
+done
+
+# Traverse /var/lib/dkms and remove all directories (we need to keep the mok pub/priv keys)
+for dir in /var/lib/dkms/*; do
+  if [[ -d "$dir" ]]; then
+    rm -r --one-file-system "$dir" || {
+      echo -e "\033[1;31mFailed to remove directory $dir\033[0m"
+    }
+  fi
+done
+
+AT_LEAST_ONE_ERROR=false
+
+echo -e "\n\033[1;34mInstalling all DKMS modules for all kernels...\033[0m"
+
+# Build and install all DKMS modules for all kernels
+for module in "${DKMS_MODULES[@]}"; do
+    for kernel in "${KERNELS[@]}"; do
+        echo -e "\033[1;34mInstalling module $module for kernel $kernel...\033[0m"
+        dkms install "$module" -k "$kernel" --force || {
+            echo -e "\033[1;31mFailed to install module $module for kernel $kernel\033[0m"
+            AT_LEAST_ONE_ERROR=true
+        }
+    done
+done
+
+echo -e "\033[1;32mDKMS rebuild completed.\033[0m"
+
+if $AT_LEAST_ONE_ERROR; then
+  echo -e "\033[1;31mSome modules failed to install. Please check the output for details.\033[0m"
+else
+  echo -e "\033[1;32mAll modules installed successfully.\033[0m"
+fi
