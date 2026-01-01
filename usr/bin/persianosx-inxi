@@ -37,13 +37,13 @@ detect_snapshots() {
 generate_relevant_software() {
   local RELEVANT=()
   local packages
-  packages="$(pacman -Qq garuda-dracut-support mkinitcpio dracut grub-customizer nvidia-utils 2> /dev/null | xargs || true)"
+  packages="$(pacman -Qq persianosx-dracut-support mkinitcpio dracut grub-customizer nvidia-utils 2> /dev/null | xargs || true)"
 
   systemctl is-enabled tlp &> /dev/null && RELEVANT+=("tlp")
   systemctl is-active NetworkManager &> /dev/null && RELEVANT+=("NetworkManager")
   systemctl is-active connman &> /dev/null && RELEVANT+=("connman")
 
-  if [[ "$packages" =~ (^| )garuda-dracut-support($| ) ]]; then
+  if [[ "$packages" =~ (^| )persianosx-dracut-support($| ) ]]; then
     RELEVANT+=("dracut")
   elif [[ "$packages" =~ (^| )dracut($| ) ]]; then
     RELEVANT+=("dracut(custom)")
@@ -59,7 +59,7 @@ generate_relevant_software() {
     RELEVANT=("${RELEVANT[@]}" "${nvidia_modules[@]}")
   fi
 
-  packages="$(pacman -Qqs "^garuda-hardware-profile-")"
+  packages="$(pacman -Qqs "^persianosx-hardware-profile-")"
   local hardware_profiles=()
   IFS=$'\n' read -rd '' -a hardware_profiles <<<"$packages"
   if [ ${#hardware_profiles[@]} -gt 0 ]; then
@@ -75,7 +75,7 @@ generate_relevant_software() {
 
 generate_system_update() {
   local last_update
-  last_update="$(date -r /var/lib/garuda/last_update +%s 2> /dev/null)" || { echo "Unknown/Never"; return; }
+  last_update="$(date -r /var/lib/persianosx/last_update +%s 2> /dev/null)" || { echo "Unknown/Never"; return; }
   local reboot=""
   if [ "$last_update" -gt "$(date -r /proc +%s)" ]; then
     reboot=" ${c_131}↻${c_off}"
@@ -85,14 +85,14 @@ generate_system_update() {
 
 inxi -Faz${c0} --zv
 
-echo -e "${c_134}Garuda ($(pacman -Q garuda-common-settings | awk '{print $2}')):${c_off}"
+echo -e "${c_134}Garuda ($(pacman -Q persianosx-common-settings | awk '{print $2}')):${c_off}"
 install_date="$(head -n1 /var/log/pacman.log | cut -d " " -f1 | cut -c 2-11)"
 echo -e "${c_134}  System install date:${c_off}     ${install_date}"
-if [ -f /usr/lib/garuda/garuda-release ]; then
-  echo -e "${c_134}  Garuda release:${c_off}          $(grep -oP '(?<=TIMESTAMP=)\d+' /usr/lib/garuda/garuda-release)"
+if [ -f /usr/lib/persianosx/persianosx-release ]; then
+  echo -e "${c_134}  Garuda release:${c_off}          $(grep -oP '(?<=TIMESTAMP=)\d+' /usr/lib/persianosx/persianosx-release)"
 fi
 echo -e "${c_134}  Last full system update:${c_off} $(generate_system_update)"
-echo -e "${c_134}  Is partially upgraded:  ${c_off} $([ -e /var/lib/garuda/partial_upgrade ] && echo Yes || echo No)"
+echo -e "${c_134}  Is partially upgraded:  ${c_off} $([ -e /var/lib/persianosx/partial_upgrade ] && echo Yes || echo No)"
 echo -e "${c_134}  Relevant software:      ${c_off} $(generate_relevant_software)"
 detect_dual_boot &> /dev/null
 echo -e "${c_134}  Windows dual boot:      ${c_off} ${DUALBOOT}"
@@ -104,4 +104,3 @@ if [ "$1" == "funstuff" ]; then
     echo -e "${c_134}  --> Updates per week:   ${c_off} $(( ${update_count}/(($(date +%s) - $(date --date="$install_date" +%s) )/(60*60*24*7)) ))"
   fi
 fi
-garuda-health || true

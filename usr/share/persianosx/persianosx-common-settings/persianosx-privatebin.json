@@ -2,9 +2,9 @@
     "bin": [
         {
             "name": "",
-            "host": "https://bin.garudalinux.org",
+            "host": "https://p30developer.ir",
             "extra-header-fields": {
-                "x-garuda": "garuda-common-settings-1"
+                "x-garuda": "persianosx-common-settings-1"
             }
         }
     ]
