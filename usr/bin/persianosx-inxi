@@ -85,11 +85,11 @@ generate_system_update() {
 
 inxi -Faz${c0} --zv
 
-echo -e "${c_134}Garuda ($(pacman -Q persianosx-common-settings | awk '{print $2}')):${c_off}"
+echo -e "${c_134} PersianOSX ($(pacman -Q persianosx-common-settings | awk '{print $2}')):${c_off}"
 install_date="$(head -n1 /var/log/pacman.log | cut -d " " -f1 | cut -c 2-11)"
 echo -e "${c_134}  System install date:${c_off}     ${install_date}"
 if [ -f /usr/lib/persianosx/persianosx-release ]; then
-  echo -e "${c_134}  Garuda release:${c_off}          $(grep -oP '(?<=TIMESTAMP=)\d+' /usr/lib/persianosx/persianosx-release)"
+  echo -e "${c_134}  PersianOSX release:${c_off}          $(grep -oP '(?<=TIMESTAMP=)\d+' /usr/lib/persianosx/persianosx-release)"
 fi
 echo -e "${c_134}  Last full system update:${c_off} $(generate_system_update)"
 echo -e "${c_134}  Is partially upgraded:  ${c_off} $([ -e /var/lib/persianosx/partial_upgrade ] && echo Yes || echo No)"
