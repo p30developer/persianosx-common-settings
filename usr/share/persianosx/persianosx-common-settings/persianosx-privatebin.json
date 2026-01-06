@@ -4,7 +4,7 @@
             "name": "",
             "host": "https://p30developer.ir",
             "extra-header-fields": {
-                "x-garuda": "persianosx-common-settings-1"
+                "x-persianosx": "persianosx-common-settings-1"
             }
         }
     ]
